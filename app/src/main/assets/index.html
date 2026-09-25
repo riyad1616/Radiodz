@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>راديو الجزائر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#05070b; --bg-1:#0e1420; --bg-2:#161f2f;
+    --line:#232d40;
+    --gold:#f2b632; --gold-dim:#8a6a1f;
+    --text:#eef1f6; --text-dim:#8793a8;
+    --live:#57d38c;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:inherit;}
+  html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);}
+  body{
+    height:100%;margin:0;
+    background:
+      radial-gradient(ellipse at 50% -10%, #1b2438 0%, transparent 60%),
+      var(--bg-0);
+    color:var(--text);
+    font-family:'Rubik',system-ui,sans-serif;
+    display:flex; justify-content:center;
+  }
+  .shell{
+    width:100%; max-width:480px;
+    min-height:100%;
+    display:flex; flex-direction:column;
+    padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px));
+  }
+
+  /* top tabs */
+  .tabs{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:18px;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{
+    flex:0 0 auto; padding:9px 16px; border-radius:14px;
+    background:var(--bg-2); color:var(--text-dim); font-weight:500; font-size:14px;
+    border:1px solid var(--line); cursor:pointer; white-space:nowrap;
+  }
+  .tab.active{background:var(--gold); color:#241a03; border-color:var(--gold); font-weight:700;}
+
+  /* display */
+  .display{
+    text-align:center; padding:26px 10px 10px;
+  }
+  .freq{
+    font-family:'Space Grotesk',monospace; font-weight:700;
+    font-size:clamp(48px,15vw,72px); color:var(--gold); line-height:1;
+    letter-spacing:1px;
+  }
+  .unit{
+    font-family:'Space Grotesk',monospace; font-weight:500;
+    color:var(--gold-dim); font-size:20px; margin-top:2px;
+  }
+  .name{font-size:26px; font-weight:700; margin-top:18px;}
+  .loc{color:var(--text-dim); font-size:15px; margin-top:6px;}
+  .status{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    margin-top:16px; font-size:14px; color:var(--text-dim);
+  }
+  .dot{width:8px; height:8px; border-radius:50%; background:var(--text-dim);}
+  .status.on .dot{background:var(--live); box-shadow:0 0 8px var(--live);}
+  .status.on{color:var(--live);}
+
+  /* transport */
+  .transport{display:flex; gap:10px; margin-top:26px;}
+  .seek, .play{
+    flex:1; border:1px solid var(--line); background:var(--bg-2);
+    color:var(--text); border-radius:14px; padding:16px 0;
+    font-size:15px; font-weight:700; display:flex; flex-direction:column;
+    align-items:center; gap:4px; cursor:pointer;
+  }
+  .seek span, .play span{font-size:20px;}
+  .play{flex:1.3; background:var(--gold); color:#241a03; border-color:var(--gold);}
+  .play.playing{background:#3a2c08; color:var(--gold); border-color:var(--gold-dim);}
+
+  .row2{display:flex; gap:10px; margin-top:10px;}
+  .btn2{
+    flex:1; border:1px solid var(--line); background:var(--bg-2); color:var(--text-dim);
+    border-radius:14px; padding:14px 0; font-size:14px; font-weight:500; cursor:pointer;
+  }
+  .btn2.active{color:var(--gold); border-color:var(--gold-dim);}
+
+  /* presets */
+  .presets{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:16px;
+  }
+  .preset{
+    aspect-ratio:1; border-radius:12px; background:var(--bg-1); border:1px solid var(--line);
+    color:var(--text-dim); font-weight:700; font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    position:relative;
+  }
+  .preset.filled{color:var(--text); border-color:var(--gold-dim);}
+  .preset.current{border-color:var(--gold); color:var(--gold);}
+
+  .hint{text-align:center; color:var(--text-dim); font-size:12px; margin-top:14px;}
+
+  @media (prefers-reduced-motion:no-preference){
+    .name{transition:opacity .15s ease;}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="display">
+    <div class="freq" id="freq">—</div>
+    <div class="unit" id="unit">&nbsp;</div>
+    <div class="name" id="name">اختر محطة</div>
+    <div class="loc" id="loc">&nbsp;</div>
+    <div class="status" id="status"><span class="dot"></span><span id="statusText">متوقف</span></div>
+  </div>
+
+  <div class="transport">
+    <div class="seek" id="prev">◀<span>السابقة</span></div>
+    <div class="play" id="play">▶<span id="playLabel">تشغيل</span></div>
+    <div class="seek" id="next">▶<span>التالية</span></div>
+  </div>
+
+  <div class="row2">
+    <div class="btn2" id="saveBtn">حفظ في محطة محفوظة</div>
+    <div class="btn2" id="muteBtn">كتم الصوت</div>
+  </div>
+
+  <div class="presets" id="presets"></div>
+  <div class="hint">اضغط مطولًا على رقم لحفظ المحطة الحالية فيه</div>
+
+  <audio id="player" preload="none"></audio>
+</div>
+
+<script>
+const STATIONS = [
+  {id:"chaine1", group:"الجزائر", name:"القناة الأولى", loc:"الجزائر العاصمة", freq:"891", unit:"kHz", url:"https://radiochaine1.ice.infomaniak.ch/chaine1.mp3"},
+  {id:"chaine2", group:"الجزائر", name:"القناة الثانية (الأمازيغية)", loc:"الجزائر العاصمة", freq:"981", unit:"kHz", url:"https://radiochaine2.ice.infomaniak.ch/chaine2.mp3"},
+  {id:"chaine3", group:"الجزائر", name:"القناة الثالثة", loc:"الجزائر العاصمة", freq:"", unit:"مباشر", url:"https://radiochaine3.ice.infomaniak.ch/chaine3.mp3"},
+  {id:"rai", group:"الجزائر", name:"الإذاعة الدولية", loc:"الجزائر العاصمة", freq:"", unit:"مباشر", url:"https://radiointernationale.ice.infomaniak.ch/internationale.mp3"},
+  {id:"bahdja", group:"الجزائر", name:"إذاعة البهجة", loc:"الجزائر العاصمة", freq:"94.2", unit:"MHz", url:"https://radioelbahdja.ice.infomaniak.ch/elbahdja.mp3"},
+  {id:"jil", group:"الجزائر", name:"جيل إف إم", loc:"الجزائر العاصمة", freq:"549", unit:"kHz", url:"https://radiojeunesse.ice.infomaniak.ch/jeunesse.mp3"},
+  {id:"corandz", group:"الجزائر", name:"إذاعة القرآن الكريم", loc:"الجزائر العاصمة", freq:"756", unit:"kHz", url:"https://radiocoran.ice.infomaniak.ch/coran.mp3"},
+  {id:"zaman", group:"الجزائر", name:"زمان إف إم", loc:"الجزائر العاصمة", freq:"", unit:"مباشر", url:"https://radiozamen.ice.infomaniak.ch/zamen.mp3"},
+  {id:"fm2", group:"فرنسا", name:"France Maghreb 2", loc:"باريس", freq:"99.5", unit:"MHz", url:"https://francemaghreb2.ice.infomaniak.ch/francemaghreb2-128.mp3"},
+  {id:"hawana", group:"فرنسا", name:"Radio Hawana", loc:"فرنسا", freq:"", unit:"مباشر", url:"https://radiohawana.ice.infomaniak.ch/hawana.mp3"},
+  {id:"qr1", group:"السعودية", name:"إذاعة القرآن الكريم (الرياض)", loc:"الرياض", freq:"", unit:"مباشر", url:"https://n0a.radiojar.com/0tpy1h0kxtzuv"},
+  {id:"qr2", group:"السعودية", name:"القرآن - مختصر التفسير", loc:"الرياض", freq:"", unit:"مباشر", url:"https://qurango.net/radio/mukhtasartafsir"},
+  {id:"qr3", group:"السعودية", name:"القرآن - محمد أيوب", loc:"الرياض", freq:"", unit:"مباشر", url:"https://qurango.net/radio/mohammed_ayyub"},
+];
+
+const els = {
+  tabs: document.getElementById('tabs'),
+  freq: document.getElementById('freq'),
+  unit: document.getElementById('unit'),
+  name: document.getElementById('name'),
+  loc: document.getElementById('loc'),
+  status: document.getElementById('status'),
+  statusText: document.getElementById('statusText'),
+  play: document.getElementById('play'),
+  playLabel: document.getElementById('playLabel'),
+  prev: document.getElementById('prev'),
+  next: document.getElementById('next'),
+  save: document.getElementById('saveBtn'),
+  mute: document.getElementById('muteBtn'),
+  presets: document.getElementById('presets'),
+  player: document.getElementById('player'),
+};
+
+let groups = [...new Set(STATIONS.map(s=>s.group))];
+let currentGroup = groups[0];
+let currentIndex = 0;
+let isPlaying = false;
+let isMuted = false;
+let presetSlots = loadPresets();
+
+function loadPresets(){
+  try{
+    const raw = localStorage.getItem('dz_radio_presets');
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return Array(10).fill(null);
+}
+function savePresets(){
+  try{ localStorage.setItem('dz_radio_presets', JSON.stringify(presetSlots)); }catch(e){}
+}
+
+function stationsInGroup(g){ return STATIONS.filter(s=>s.group===g); }
+
+function renderTabs(){
+  els.tabs.innerHTML='';
+  groups.forEach(g=>{
+    const t=document.createElement('div');
+    t.className='tab'+(g===currentGroup?' active':'');
+    t.textContent=g;
+    t.onclick=()=>{ currentGroup=g; currentIndex=0; renderTabs(); loadStation(stationsInGroup(g)[0], false); };
+    els.tabs.appendChild(t);
+  });
+}
+
+function renderPresets(){
+  els.presets.innerHTML='';
+  for(let i=0;i<10;i++){
+    const p=document.createElement('div');
+    const slot=presetSlots[i];
+    p.className='preset'+(slot?' filled':'')+(slot && current && slot.id===current.id?' current':'');
+    p.textContent = (i+1)%10;
+    p.title = slot ? slot.name : 'فارغ';
+    let pressTimer;
+    p.onmousedown = p.ontouchstart = ()=>{
+      pressTimer = setTimeout(()=>{
+        if(current){ presetSlots[i]=current; savePresets(); renderPresets(); }
+      }, 550);
+    };
+    const cancel=()=>clearTimeout(pressTimer);
+    p.onmouseup=p.onmouseleave=p.ontouchend=cancel;
+    p.onclick=()=>{
+      if(slot){
+        currentGroup = slot.group; renderTabs();
+        loadStation(slot, false);
+      }
+    };
+    els.presets.appendChild(p);
+  }
+}
+
+let current = null;
+
+function loadStation(station, autoplay){
+  current = station;
+  els.freq.textContent = station.freq || 'ON';
+  els.freq.textContent = station.freq ? station.freq : 'LIVE';
+  els.unit.textContent = station.unit;
+  els.name.textContent = station.name;
+  els.loc.textContent = station.loc;
+  els.player.src = station.url;
+  setPlaying(false);
+  setStatus('idle');
+  if(autoplay) togglePlay(true);
+  renderPresets();
+}
+
+function setStatus(state){
+  els.status.classList.toggle('on', state==='on');
+  els.statusText.textContent = state==='on' ? 'يعمل الآن' : (state==='buffering' ? 'جارٍ الاتصال…' : 'متوقف');
+}
+
+function setPlaying(playing){
+  isPlaying = playing;
+  els.play.classList.toggle('playing', playing);
+  els.playLabel.textContent = playing ? 'إيقاف' : 'تشغيل';
+  els.play.firstChild.textContent = playing ? '❚❚' : '▶';
+}
+
+function togglePlay(force){
+  const wantPlay = typeof force==='boolean' ? force : !isPlaying;
+  if(!current) return;
+  if(wantPlay){
+    setStatus('buffering');
+    els.player.play().then(()=>{
+      setPlaying(true); setStatus('on');
+    }).catch(()=>{ setPlaying(false); setStatus('idle'); });
+  }else{
+    els.player.pause();
+    setPlaying(false); setStatus('idle');
+  }
+}
+
+function step(dir){
+  const list = stationsInGroup(currentGroup);
+  currentIndex = (currentIndex + dir + list.length) % list.length;
+  loadStation(list[currentIndex], isPlaying);
+}
+
+els.play.onclick = ()=>togglePlay();
+els.next.onclick = ()=>step(1);
+els.prev.onclick = ()=>step(-1);
+els.mute.onclick = ()=>{
+  isMuted = !isMuted;
+  els.player.muted = isMuted;
+  els.mute.classList.toggle('active', isMuted);
+  els.mute.textContent = isMuted ? 'إلغاء الكتم' : 'كتم الصوت';
+};
+els.save.onclick = ()=>{
+  const empty = presetSlots.findIndex(s=>!s);
+  const slotIndex = empty===-1 ? 0 : empty;
+  presetSlots[slotIndex] = current;
+  savePresets(); renderPresets();
+};
+els.player.addEventListener('waiting', ()=>setStatus('buffering'));
+els.player.addEventListener('playing', ()=>setStatus('on'));
+els.player.addEventListener('error', ()=>{ setPlaying(false); setStatus('idle'); });
+
+renderTabs();
+loadStation(stationsInGroup(currentGroup)[0], false);
+renderPresets();
+</script>
+</body>
+</html>
